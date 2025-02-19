@@ -3,8 +3,6 @@ package com.picpaysimplificado.services;
 import com.picpaysimplificado.domain.user.User;
 import com.picpaysimplificado.domain.user.UserType;
 import com.picpaysimplificado.repositories.UserRepository;
-import lombok.Getter;
-import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +18,6 @@ public class UserService {
         if(sender.getUserType() == UserType.MERCHANT){
             throw new Exception("Logista não tem autorização para realizar transações.");
         }
-
         if(sender.getBalance().compareTo(amount) < 0){
             throw new Exception("Saldo insuficiente!");
         }
