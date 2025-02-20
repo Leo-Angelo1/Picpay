@@ -13,16 +13,31 @@ public class NotificationService {
     @Autowired
     private RestTemplate restTemplate;
 
-    public void sendNotification(User user, String message) throws Exception {
-        String email = user.getEmail();
-        NotificationDTO notificationRequest = new NotificationDTO(email, message);
+    public void sendNotification(User user, String message) {
+        try {
+            String email = user.getEmail();
+            NotificationDTO notificationRequest = new NotificationDTO(email, message);
 
-        ResponseEntity<String> notificationResponse = restTemplate.postForEntity("https://util.devi.tools/api/v1/notify", notificationRequest, String.class);
+            System.out.println("Enviando notificação para: " + email);
+            System.out.println("Mensagem: " + message);
 
+            ResponseEntity<String> notificationResponse = restTemplate.postForEntity(
+                    "https://util.devi.tools/api/v1/notify",
+                    notificationRequest,
+                    String.class
+            );
 
-        if(!(notificationResponse.getStatusCode() == HttpStatus.OK)){
-            System.out.println("Erro ao enviar notificação");
-            throw new Exception("Serviço de notificação está fora do ar");
+            System.out.println("Status Code: " + notificationResponse.getStatusCode());
+            System.out.println("Response Body: " + notificationResponse.getBody());
+
+            if (!notificationResponse.getStatusCode().is2xxSuccessful()) {
+                throw new RuntimeException("Serviço de notificação está fora do ar");
+            }
+
+        } catch (Exception e) {
+            System.err.println("Erro ao enviar notificação: " + e.getMessage());
+            e.printStackTrace();
         }
     }
+
 }

@@ -26,7 +26,10 @@ public class TransactionService {
     @Autowired
     private RestTemplate restTemplate;
 
-    public void createTransaction(TransactionDTO transaction) throws Exception {
+    @Autowired
+    private NotificationService notificationService;
+
+    public Transaction createTransaction(TransactionDTO transaction) throws Exception {
         User sender = this.userService.findUserById(transaction.senderId());
         User receiver = this.userService.findUserById(transaction.receiverId());
 
@@ -48,14 +51,34 @@ public class TransactionService {
         this.repository.save(newTransaction);
         this.userService.saveUser(sender);
         this.userService.saveUser((receiver));
+
+        this.notificationService.sendNotification(sender, "Transção realizada com sucesso");
+        this.notificationService.sendNotification(receiver, "Transção recebida com sucesso");
+
+        return newTransaction;
     }
 
     public boolean authorizeTransaction(User sender, BigDecimal value) {
-        ResponseEntity<java.util.Map> authorizationResponse = restTemplate.getForEntity("https://util.devi.tools/api/v2/authorize", Map.class);
+        try {
+            ResponseEntity<Map> authorizationResponse = restTemplate.getForEntity("https://util.devi.tools/api/v2/authorize", Map.class);
 
-        if(authorizationResponse.getStatusCode() == HttpStatus.OK){
-            String authorization = (String) authorizationResponse.getBody().get("authorization");
-            return "true".equalsIgnoreCase(authorization);
-        } else return false;
+            System.out.println("Status Code: " + authorizationResponse.getStatusCode());
+            System.out.println("Response Body: " + authorizationResponse.getBody());
+
+            if (authorizationResponse.getStatusCode() == HttpStatus.OK) {
+                Map<String, Object> responseBody = authorizationResponse.getBody();
+                if (responseBody != null && "success".equalsIgnoreCase((String) responseBody.get("status"))) {
+                    Map<String, Object> data = (Map<String, Object>) responseBody.get("data");
+                    if (data != null) {
+                        Boolean authorization = (Boolean) data.get("authorization");
+                        return authorization != null && authorization;
+                    }
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            System.err.println("Erro ao autorizar transação: " + e.getMessage());
+            return false;
+        }
     }
 }
